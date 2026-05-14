@@ -3,13 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "SSE Job Runner PoC - Real-time job progress streaming via Server-Sent Events",
-  "workspaces": [
-    "packages/*"
-  ],
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "build:shared": "npm run build --workspace=packages/shared",
-    "build:server": "npm run build --workspace=packages/server",
-    "build:dashboard": "npm run build --workspace=packages/dashboard",
-    "build": "npm run build:shared && npm run build:server"
+    "build:shared": "pnpm --filter @job-runner/shared build",
+    "build:server": "pnpm --filter @job-runner/server build",
+    "build:dashboard": "pnpm --filter @job-runner/dashboard build",
+    "build": "pnpm build:shared && pnpm build:server"
   }
 }

@@ -1,29 +1,30 @@
 # --- Base stage ---
 FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/dashboard/package.json ./packages/dashboard/
 
 # --- Development stage ---
 FROM base AS development
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 COPY packages/shared/ ./packages/shared/
 COPY packages/dashboard/ ./packages/dashboard/
 COPY tsconfig.base.json ./
 EXPOSE 3000
-CMD ["npm", "run", "dev", "--workspace=packages/dashboard"]
+CMD ["pnpm", "--filter", "@job-runner/dashboard", "dev"]
 
 # --- Build stage ---
 FROM base AS build
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 COPY packages/shared/ ./packages/shared/
 COPY packages/dashboard/ ./packages/dashboard/
 COPY tsconfig.base.json ./
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-RUN npm run build --workspace=packages/shared
-RUN npm run build --workspace=packages/dashboard
+RUN pnpm --filter @job-runner/shared build
+RUN pnpm --filter @job-runner/dashboard build
 
 # --- Production stage ---
 FROM node:20-alpine AS production

@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# pnpm
+pnpm-debug.log*
+
 # Build output
 dist/
 .next/
@@ -25,6 +28,7 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+pnpm-debug.log*
 
 # Docker volumes
 server_node_modules/

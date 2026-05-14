@@ -59,16 +59,16 @@ job-runner/
 ### Prerequisites
 
 - Node.js 18+
-- npm 9+ (uses npm workspaces)
+- pnpm 9+ (or use `npx pnpm` without a global install)
 
 ### Installation
 
 ```bash
 # Install all dependencies
-npm install
+npx pnpm install
 
 # Build the shared library (required before running)
-npm run build:shared
+npx pnpm build:shared
 ```
 
 ### Development
@@ -77,10 +77,10 @@ Run the server and dashboard in separate terminals:
 
 ```bash
 # Terminal 1 — API Server (port 3001)
-npm run dev --workspace=packages/server
+npx pnpm --filter @job-runner/server dev
 
 # Terminal 2 — Dashboard (port 3000)
-npm run dev --workspace=packages/dashboard
+npx pnpm --filter @job-runner/dashboard dev
 ```
 
 Or use Docker Compose for development with hot-reload:
@@ -203,7 +203,7 @@ Defined in `packages/shared/src/constants.ts`:
 
 ## Tech Stack
 
-- **Monorepo**: npm workspaces
+- **Monorepo**: pnpm workspaces
 - **Server**: Express.js, TypeScript, uuid
 - **Dashboard**: Next.js 14 (App Router), React 18, Tailwind CSS
 - **Shared**: TypeScript library
