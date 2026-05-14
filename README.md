@@ -123,6 +123,40 @@ The stream endpoint sends `progress` events with this shape:
 }
 ```
 
+## Connection Resilience
+
+The dashboard uses two complementary strategies to stay up-to-date:
+
+### SSE Stream (real-time updates per job)
+
+When an active job's SSE connection drops (network loss, server restart, etc.):
+
+1. The `useJobStream` hook closes the dead `EventSource` and begins retrying
+2. Retries use exponential backoff: 1s → 2s → 4s (3 attempts max)
+3. If the connection recovers within the retry window (~7 seconds total), streaming resumes seamlessly
+4. If all retries are exhausted, `connectionState` is set to `'error'` and the stream stops
+
+The hook does **not** rely on the browser's built-in `EventSource` auto-reconnect — it manages reconnection manually for more control over retry limits and state.
+
+### Polling fallback (job list)
+
+The `useJobs` hook polls `GET /api/jobs` every 2 seconds regardless of SSE state. This means:
+
+- Even if the SSE stream dies permanently, the job list still refreshes
+- The user loses real-time granularity (progress updates arrive every 2s instead of instantly) but never loses visibility entirely
+
+### Server-side cleanup
+
+When a client disconnects:
+
+- The 15-second heartbeat detects failed writes and removes dead connections from the `SSEConnectionManager`
+- The `res.on('close')` handler unsubscribes from job update events and stops the heartbeat interval
+- Connection slots are freed immediately, staying within the 20-connection limit
+
+### Known limitation
+
+If the network is down for longer than ~7 seconds, the SSE stream will not automatically recover. The user would need to navigate away and back (re-mounting the component) to establish a fresh stream. Polling continues to work as a fallback in the meantime.
+
 ## Environment Variables
 
 ### Server (`packages/server/.env`)
