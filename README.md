@@ -123,6 +123,20 @@ The stream endpoint sends `progress` events with this shape:
 }
 ```
 
+## Why SSE over WebSockets?
+
+This project uses Server-Sent Events rather than WebSockets because the communication is strictly one-directional: the server pushes progress updates to the client, and the client never needs to send data back over the same channel (job creation and cancellation use regular REST calls).
+
+SSE advantages for this use case:
+
+- **Simpler implementation** — just write to an HTTP response; no upgrade handshake or frame protocol
+- **Works over plain HTTP** — passes through proxies, load balancers, and CDNs without special configuration
+- **Built-in browser reconnection** — the `EventSource` API handles reconnects natively (though this project manages retries manually for finer control)
+- **Lightweight** — no per-frame overhead; just UTF-8 text over a long-lived HTTP connection
+- **Easy to debug** — standard HTTP, visible in browser DevTools Network tab as a readable text stream
+
+WebSockets would be the better choice if the client needed to send frequent messages back to the server over the same connection (e.g., multiplayer games, collaborative editing, chat applications).
+
 ## Connection Resilience
 
 The dashboard uses two complementary strategies to stay up-to-date:
