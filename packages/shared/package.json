@@ -1,0 +1,22 @@
+{
+  "name": "@job-runner/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared TypeScript types and constants for the SSE Job Runner",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

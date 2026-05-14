@@ -1,0 +1,11 @@
+export const JOB_DURATION_MIN_MS = 5000;
+export const JOB_DURATION_MAX_MS = 60000;
+export const PROGRESS_INCREMENT_MIN = 1;
+export const PROGRESS_INCREMENT_MAX = 15;
+export const PROGRESS_INTERVAL_MIN_MS = 500;
+export const FAILURE_RATE_MIN = 0.08;
+export const FAILURE_RATE_MAX = 0.12;
+export const MAX_CONCURRENT_SSE_CONNECTIONS = 20;
+export const HEARTBEAT_INTERVAL_MS = 15000;
+export const CONNECTION_TIMEOUT_MS = 30000;
+export const MAX_JOBS_RETURNED = 100;
