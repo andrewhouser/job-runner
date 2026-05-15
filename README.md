@@ -198,6 +198,7 @@ Defined in `packages/shared/src/constants.ts`:
 | `PROGRESS_INCREMENT_MAX` | 15 | Max progress per tick (%) |
 | `FAILURE_RATE_MIN` | 0.08 | Min probability a job will fail |
 | `FAILURE_RATE_MAX` | 0.12 | Max probability a job will fail |
+| `MAX_CONCURRENT_JOBS` | 5 | Max jobs running simultaneously |
 | `MAX_CONCURRENT_SSE_CONNECTIONS` | 20 | SSE connection limit |
 | `HEARTBEAT_INTERVAL_MS` | 15000 | SSE heartbeat interval |
 

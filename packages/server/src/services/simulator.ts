@@ -4,6 +4,7 @@ import {
   PROGRESS_INCREMENT_MIN,
   PROGRESS_INCREMENT_MAX,
   PROGRESS_INTERVAL_MIN_MS,
+  MAX_CONCURRENT_JOBS,
 } from '@job-runner/shared';
 import { jobManager } from './jobManager.js';
 
@@ -104,6 +105,7 @@ export class JobSimulator {
       jobManager.emitJobUpdate(updatedJob);
       this.timeoutHandle = null;
       activeSimulators.delete(this.jobId);
+      processQueue();
       return;
     }
 
@@ -123,6 +125,7 @@ export class JobSimulator {
       jobManager.emitJobUpdate(updatedJob);
       this.timeoutHandle = null;
       activeSimulators.delete(this.jobId);
+      processQueue();
       return;
     }
 
@@ -212,16 +215,58 @@ export class JobSimulator {
 // Track active simulators
 const activeSimulators: Map<string, JobSimulator> = new Map();
 
+// Queue of job IDs waiting to run
+const pendingQueue: string[] = [];
+
+/**
+ * Attempts to start the next pending job(s) from the queue
+ * if there are available concurrency slots.
+ */
+function processQueue(): void {
+  while (activeSimulators.size < MAX_CONCURRENT_JOBS && pendingQueue.length > 0) {
+    const jobId = pendingQueue.shift()!;
+    const job = jobManager.getJob(jobId);
+
+    // Skip jobs that were cancelled while pending
+    if (!job || job.status !== JobStatus.PENDING) {
+      continue;
+    }
+
+    const simulator = new JobSimulator(jobId);
+    activeSimulators.set(jobId, simulator);
+    simulator.start();
+  }
+}
+
+/**
+ * Enqueues a job for simulation. If there's a free concurrency slot,
+ * the job starts immediately. Otherwise it stays in PENDING until
+ * a running job completes, fails, or is cancelled.
+ */
 export function startSimulation(jobId: string): void {
-  const simulator = new JobSimulator(jobId);
-  activeSimulators.set(jobId, simulator);
-  simulator.start();
+  if (activeSimulators.size < MAX_CONCURRENT_JOBS) {
+    const simulator = new JobSimulator(jobId);
+    activeSimulators.set(jobId, simulator);
+    simulator.start();
+  } else {
+    // Job stays in PENDING state and waits in the queue
+    pendingQueue.push(jobId);
+  }
 }
 
 export function cancelSimulation(jobId: string): void {
+  // If actively running, stop the simulator and free the slot
   const simulator = activeSimulators.get(jobId);
   if (simulator) {
     simulator.cancel();
     activeSimulators.delete(jobId);
+    processQueue();
+    return;
+  }
+
+  // If pending in queue, remove it
+  const queueIndex = pendingQueue.indexOf(jobId);
+  if (queueIndex !== -1) {
+    pendingQueue.splice(queueIndex, 1);
   }
 }
