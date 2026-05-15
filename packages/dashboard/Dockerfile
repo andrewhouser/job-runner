@@ -21,7 +21,7 @@ RUN pnpm install --frozen-lockfile
 COPY packages/shared/ ./packages/shared/
 COPY packages/dashboard/ ./packages/dashboard/
 COPY tsconfig.base.json ./
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+ARG NEXT_PUBLIC_API_URL=https://localhost
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm --filter @job-runner/shared build
 RUN pnpm --filter @job-runner/dashboard build

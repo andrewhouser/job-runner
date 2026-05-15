@@ -2,6 +2,25 @@
 
 Zooms into each container to show internal components and their responsibilities.
 
+## Nginx Reverse Proxy
+
+```mermaid
+C4Component
+    title Component Diagram - Nginx Reverse Proxy
+
+    Container_Boundary(nginx, "Nginx Reverse Proxy") {
+        Component(tlsTerm, "TLS Termination", "OpenSSL", "Self-signed certificate (RSA 2048, SAN: localhost/127.0.0.1), TLS 1.2/1.3")
+        Component(http2, "HTTP/2 Server", "Nginx", "Multiplexes all browser connections over a single TCP connection on port 443")
+        Component(proxyDash, "Dashboard Proxy", "Nginx location /", "Forwards page requests to Next.js on port 3000")
+        Component(proxyApi, "API Proxy", "Nginx location /api/", "Forwards API and SSE requests to Express on port 3001, buffering disabled")
+        Component(redirect, "HTTP Redirect", "Nginx port 80", "301 redirects HTTP to HTTPS")
+    }
+
+    Rel(http2, tlsTerm, "Decrypts incoming HTTPS")
+    Rel(http2, proxyDash, "Routes / requests")
+    Rel(http2, proxyApi, "Routes /api/* requests")
+```
+
 ## API Server Components
 
 ```mermaid
@@ -12,7 +31,7 @@ C4Component
         Component(jobsRouter, "Jobs Router", "Express Router", "Handles POST /api/jobs, GET /api/jobs, GET /api/jobs/:id, POST /api/jobs/:id/cancel")
         Component(streamRouter, "Stream Router", "Express Router", "Handles GET /api/jobs/:id/stream — sets up SSE connections")
         Component(jobManager, "Job Manager", "TypeScript Class", "In-memory job store (Map), CRUD operations, EventEmitter for pub/sub job updates")
-        Component(simulator, "Job Simulator", "TypeScript Class", "Simulates job progress with randomized increments and configurable failure rate (8-12%)")
+        Component(simulator, "Job Simulator & Queue", "TypeScript Module", "Concurrency-limited job execution (max 5). Queues excess jobs in PENDING, promotes to RUNNING as slots free up. Simulates progress with randomized increments and 8-12% failure rate.")
         Component(sseManager, "SSE Connection Manager", "TypeScript Class", "Tracks active SSE connections per job, enforces max 20 limit, broadcasts events, detects dead connections")
         Component(heartbeat, "Heartbeat", "TypeScript Module", "Sends SSE comments every 15s to keep connections alive, triggers cleanup on write failure")
         Component(errorHandler, "Error Handler", "Express Middleware", "Global error handler returning ApiErrorResponse format")
@@ -20,7 +39,7 @@ C4Component
     }
 
     Rel(jobsRouter, jobManager, "Creates, reads, cancels jobs")
-    Rel(jobsRouter, simulator, "Starts/stops simulations")
+    Rel(jobsRouter, simulator, "Enqueues/cancels simulations")
     Rel(streamRouter, jobManager, "Reads job state, subscribes to updates")
     Rel(streamRouter, sseManager, "Registers connections, triggers broadcasts")
     Rel(streamRouter, heartbeat, "Starts/stops heartbeat intervals")
@@ -62,6 +81,16 @@ C4Component
 
 ## Component Responsibilities
 
+### Nginx Components
+
+| Component | Responsibility |
+|-----------|---------------|
+| TLS Termination | Decrypts HTTPS traffic using self-signed certificate |
+| HTTP/2 Server | Multiplexes all browser streams over one TCP connection |
+| Dashboard Proxy | Routes page requests to Next.js |
+| API Proxy | Routes API/SSE requests to Express with buffering disabled |
+| HTTP Redirect | Redirects port 80 traffic to HTTPS |
+
 ### Server Components
 
 | Component | Responsibility |
@@ -69,7 +98,7 @@ C4Component
 | Jobs Router | REST CRUD endpoints for job lifecycle management |
 | Stream Router | SSE endpoint setup, initial event dispatch, connection lifecycle |
 | Job Manager | Central state store, event bus for job updates, UUID generation |
-| Job Simulator | Async progress simulation with setTimeout chains, random failure injection |
+| Job Simulator & Queue | Concurrency-limited execution (max 5), pending queue with auto-promotion, progress simulation with failure injection |
 | SSE Connection Manager | Connection pooling, limit enforcement (max 20), fan-out broadcasting |
 | Heartbeat | Keep-alive mechanism, dead client detection |
 | Error Handler | Consistent error response formatting |

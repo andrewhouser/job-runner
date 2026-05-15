@@ -1,9 +1,18 @@
 services:
+  nginx:
+    profiles:
+      - disabled
+
   server:
     build:
       context: .
       dockerfile: packages/server/Dockerfile
       target: development
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - CORS_ORIGIN=http://localhost:3000
     volumes:
       - ./packages/shared/src:/app/packages/shared/src
       - ./packages/server/src:/app/packages/server/src
@@ -15,6 +24,10 @@ services:
       context: .
       dockerfile: packages/dashboard/Dockerfile
       target: development
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
     volumes:
       - ./packages/shared/src:/app/packages/shared/src
       - ./packages/dashboard/src:/app/packages/dashboard/src

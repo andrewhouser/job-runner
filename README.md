@@ -49,6 +49,7 @@ job-runner/
 │   ├── shared/       # Shared TypeScript types, enums, constants
 │   ├── server/       # Express API server with SSE streaming
 │   └── dashboard/    # Next.js frontend with real-time UI
+├── nginx/            # Nginx reverse proxy (HTTP/2, TLS)
 ├── diagrams/         # C4 architecture diagrams (Mermaid)
 ├── docker-compose.yml
 └── docker-compose.dev.yml
@@ -95,7 +96,11 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 docker compose up --build
 ```
 
-The dashboard will be available at `http://localhost:3000` and the API at `http://localhost:3001`.
+The application will be available at `https://localhost` (HTTP/2 over TLS via nginx). HTTP requests on port 80 are automatically redirected to HTTPS.
+
+> **Note:** The Docker build generates a self-signed SSL certificate. Your browser will show a security warning — this is expected for local development. Accept the certificate to proceed.
+
+The nginx reverse proxy serves both the dashboard and API on a single origin, eliminating CORS and the HTTP/1.1 six-connection-per-origin limit for SSE streams.
 
 ## API Endpoints
 
@@ -136,6 +141,18 @@ SSE advantages for this use case:
 - **Easy to debug** — standard HTTP, visible in browser DevTools Network tab as a readable text stream
 
 WebSockets would be the better choice if the client needed to send frequent messages back to the server over the same connection (e.g., multiplayer games, collaborative editing, chat applications).
+
+## HTTP/2 and the Connection Limit
+
+Under HTTP/1.1, browsers limit the number of concurrent connections to the same origin to 6. Since each SSE stream holds an open connection, you could only monitor 6 jobs simultaneously before new streams would queue.
+
+This project runs nginx as a reverse proxy with HTTP/2 enabled over TLS. HTTP/2 multiplexes all requests (including SSE streams) over a single TCP connection, effectively removing the 6-connection limit. The setup:
+
+- **nginx** terminates TLS and serves HTTP/2 to the browser on port 443
+- Proxies `/api/*` to the Express server (port 3001) over HTTP/1.1 internally
+- Proxies `/` to the Next.js dashboard (port 3000) internally
+- Self-signed certificate generated at Docker build time
+- HTTP (port 80) redirects to HTTPS automatically
 
 ## Connection Resilience
 
